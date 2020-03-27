@@ -1,5 +1,5 @@
 #' @importFrom stats sd
-train_mean <- function(.data, specials, ...) {
+train_mean <- function(.data, .specials, ...) {
   if (length(measured_vars(.data)) > 1) {
     abort("Only univariate responses are supported by MEAN.")
   }
@@ -11,7 +11,7 @@ train_mean <- function(.data, specials, ...) {
   }
 
   n <- length(y)
-  window_size <- specials$window[[1]]
+  window_size <- .specials$window[[1]]
   if (is.null(window_size)) {
     y_mean <- mean(y, na.rm = TRUE)
     fits <- rep(y_mean, n)
@@ -90,7 +90,7 @@ specials_mean <- new_specials(
 MEAN <- function(formula, ...) {
   mean_model <- new_model_class("mean",
     train = train_mean,
-    specials = specials_mean
+    .specials = specials_mean
   )
   new_model_definition(mean_model, !!enquo(formula), ...)
 }
@@ -107,7 +107,7 @@ MEAN <- function(formula, ...) {
 #'   model(avg = MEAN(Demand)) %>%
 #'   forecast()
 #' @export
-forecast.model_mean <- function(object, new_data, specials = NULL, bootstrap = FALSE, times = 5000, ...) {
+forecast.model_mean <- function(object, new_data, .specials = NULL, bootstrap = FALSE, times = 5000, ...) {
   h <- NROW(new_data)
 
   y_mean <- object$par$estimate
@@ -175,7 +175,7 @@ generate.model_mean <- function(x, new_data, bootstrap = FALSE, ...) {
 #'   model(mean = MEAN(Time)) %>%
 #'   interpolate(olympic_running)
 #' @export
-interpolate.model_mean <- function(object, new_data, specials, ...) {
+interpolate.model_mean <- function(object, new_data, .specials, ...) {
   # Get inputs
   y <- new_data[[measured_vars(new_data)]]
   window_size <- object[["spec"]][["window_size"]]

@@ -1,5 +1,5 @@
 #' @importFrom stats ar complete.cases
-train_nnetar <- function(.data, specials, n_nodes, n_networks, scale_inputs, ...) {
+train_nnetar <- function(.data, .specials, n_nodes, n_networks, scale_inputs, ...) {
   require_package("nnet")
 
   if (length(measured_vars(.data)) > 1) {
@@ -20,8 +20,8 @@ train_nnetar <- function(.data, specials, n_nodes, n_networks, scale_inputs, ...
 
   # Get args
   p <- P <- period <- NULL
-  assignSpecials(specials["AR"])
-  xreg <- specials$xreg[[1]]
+  assignSpecials(.specials["AR"])
+  xreg <- .specials$xreg[[1]]
 
   # Check for constant data in time series
   constant_data <- is.constant(x)
@@ -260,11 +260,11 @@ NNETAR <- function(formula, n_nodes = NULL, n_networks = 20, scale_inputs = TRUE
 #'   model(nn = NNETAR(box_cox(value, 0.15))) %>%
 #'   forecast(times = 10)
 #' @export
-forecast.NNETAR <- function(object, new_data, specials = NULL, simulate = TRUE, bootstrap = FALSE, times = 1000, ...) {
+forecast.NNETAR <- function(object, new_data, .specials = NULL, simulate = TRUE, bootstrap = FALSE, times = 1000, ...) {
   require_package("nnet")
 
   # Prepare xreg
-  xreg <- specials$xreg[[1]]
+  xreg <- .specials$xreg[[1]]
 
   if (!is.null(xreg)) {
     xreg <- as.matrix(xreg)
@@ -301,7 +301,7 @@ forecast.NNETAR <- function(object, new_data, specials = NULL, simulate = TRUE, 
     times <- 0
   }
   sim <- map(seq_len(times), function(x) {
-    generate(object, new_data, specials = specials, bootstrap = bootstrap)[[".sim"]]
+    generate(object, new_data, .specials = .specials, bootstrap = bootstrap)[[".sim"]]
   })
   if (length(sim) > 0) {
     sim <- sim %>%
@@ -325,9 +325,9 @@ forecast.NNETAR <- function(object, new_data, specials = NULL, simulate = TRUE, 
 #'   model(nn = NNETAR(box_cox(value, 0.15))) %>%
 #'   generate()
 #' @export
-generate.NNETAR <- function(x, new_data, specials = NULL, bootstrap = FALSE, ...) {
+generate.NNETAR <- function(x, new_data, .specials = NULL, bootstrap = FALSE, ...) {
   # Prepare xreg
-  xreg <- specials$xreg[[1]]
+  xreg <- .specials$xreg[[1]]
 
   if (!is.null(xreg)) {
     xreg <- as.matrix(xreg)

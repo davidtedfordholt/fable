@@ -51,9 +51,9 @@ lm_tidy_measures <- function(fit) {
   )
 }
 
-train_tslm <- function(.data, specials, ...) {
+train_tslm <- function(.data, .specials, ...) {
   y <- invoke(cbind, unclass(.data)[measured_vars(.data)])
-  xreg <- specials$xreg[[1]]
+  xreg <- .specials$xreg[[1]]
 
   keep <- complete.cases(xreg) & complete.cases(y)
   fit <- stats::lm.fit(xreg[keep, , drop = FALSE], y[keep, , drop = FALSE])
@@ -147,7 +147,7 @@ specials_tslm <- new_specials(
 TSLM <- function(formula) {
   tslm_model <- new_model_class("TSLM",
     train = train_tslm,
-    specials = specials_tslm, origin = NULL
+    .specials = specials_tslm, origin = NULL
   )
   new_model_definition(tslm_model, !!enquo(formula))
 }
@@ -273,7 +273,7 @@ report.TSLM <- function(object, digits = max(3, getOption("digits") - 3), ...) {
 #'   model(lm = TSLM(log(value) ~ trend() + season())) %>%
 #'   forecast()
 #' @export
-forecast.TSLM <- function(object, new_data, specials = NULL, bootstrap = FALSE,
+forecast.TSLM <- function(object, new_data, .specials = NULL, bootstrap = FALSE,
                           times = 5000, ...) {
   coef <- object$coef
   rank <- object$model$rank
@@ -281,7 +281,7 @@ forecast.TSLM <- function(object, new_data, specials = NULL, bootstrap = FALSE,
   piv <- qr$pivot[seq_len(rank)]
 
   # Get xreg
-  xreg <- specials$xreg[[1]]
+  xreg <- .specials$xreg[[1]]
 
   if (rank < ncol(xreg)) {
     warn("prediction from a rank-deficient fit may be misleading")
@@ -292,7 +292,7 @@ forecast.TSLM <- function(object, new_data, specials = NULL, bootstrap = FALSE,
   # Intervals
   if (bootstrap) { # Compute prediction intervals using simulations
     sim <- map(seq_len(times), function(x) {
-      generate(object, new_data, specials, bootstrap = TRUE)[[".sim"]]
+      generate(object, new_data, .specials, bootstrap = TRUE)[[".sim"]]
     }) %>%
       transpose() %>%
       map(as.numeric)
@@ -323,9 +323,9 @@ forecast.TSLM <- function(object, new_data, specials = NULL, bootstrap = FALSE,
 #'   model(lm = TSLM(log(value) ~ trend() + season())) %>%
 #'   generate()
 #' @export
-generate.TSLM <- function(x, new_data, specials, bootstrap = FALSE, ...) {
+generate.TSLM <- function(x, new_data, .specials, bootstrap = FALSE, ...) {
   # Get xreg
-  xreg <- specials$xreg[[1]]
+  xreg <- .specials$xreg[[1]]
 
   coef <- x$coef
   piv <- x$model$qr$pivot[seq_len(x$model$rank)]
@@ -357,10 +357,10 @@ generate.TSLM <- function(x, new_data, specials, bootstrap = FALSE, ...) {
 #'   model(lm = TSLM(Time ~ trend())) %>%
 #'   interpolate(olympic_running)
 #' @export
-interpolate.TSLM <- function(object, new_data, specials, ...) {
+interpolate.TSLM <- function(object, new_data, .specials, ...) {
   # Get inputs
   miss_val <- which(is.na(new_data[measured_vars(new_data)]))
-  xreg <- specials$xreg[[1]]
+  xreg <- .specials$xreg[[1]]
 
   # Make predictions
   coef <- object$coef
@@ -398,15 +398,15 @@ interpolate.TSLM <- function(object, new_data, specials, ...) {
 #'   refit(lung_deaths_female) %>%
 #'   report()
 #' @export
-refit.TSLM <- function(object, new_data, specials = NULL, reestimate = FALSE, ...) {
+refit.TSLM <- function(object, new_data, .specials = NULL, reestimate = FALSE, ...) {
   # Update data for re-evaluation
   if (reestimate) {
-    return(train_tslm(new_data, specials, ...))
+    return(train_tslm(new_data, .specials, ...))
   }
 
   # Get inputs
   y <- invoke(cbind, unclass(new_data)[measured_vars(new_data)])
-  xreg <- specials$xreg[[1]]
+  xreg <- .specials$xreg[[1]]
 
   fit <- object$model
   coef <- object$coef

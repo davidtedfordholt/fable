@@ -1,14 +1,14 @@
 #' @importFrom stats ts
-train_var <- function(.data, specials, ic, ...) {
+train_var <- function(.data, .specials, ic, ...) {
   # Get args
-  p <- specials$AR[[1]]$p
+  p <- .specials$AR[[1]]$p
 
   # Get response variables
   y <- invoke(cbind, unclass(.data)[measured_vars(.data)])
 
   # Get xreg
-  constant <- specials$xreg[[1]]$constant
-  xreg <- specials$xreg[[1]]$xreg
+  constant <- .specials$xreg[[1]]$constant
+  xreg <- .specials$xreg[[1]]$xreg
 
   # Choose best model
   reduce(transpose(expand.grid(p = p, constant = constant)),
@@ -178,7 +178,7 @@ VAR <- function(formula, ic = c("aicc", "aic", "bic"), ...) {
   ic <- switch(ic, aicc = "AICc", aic = "AIC", bic = "BIC")
   varma_model <- new_model_class("VAR",
     train = train_var,
-    specials = specials_var,
+    .specials = specials_var,
     origin = NULL,
     check = all_tsbl_checks
   )
@@ -194,7 +194,7 @@ VAR <- function(formula, ic = c("aicc", "aic", "bic"), ...) {
 #'   model(VAR(vars(log(mdeaths), fdeaths) ~ AR(3))) %>%
 #'   forecast()
 #' @export
-forecast.VAR <- function(object, new_data = NULL, specials = NULL,
+forecast.VAR <- function(object, new_data = NULL, .specials = NULL,
                          bootstrap = FALSE, times = 5000, ...) {
   if (bootstrap) {
     abort("Bootstrapped forecasts for VARs are not yet implemented.")
@@ -205,7 +205,7 @@ forecast.VAR <- function(object, new_data = NULL, specials = NULL,
   coef <- object$coef
   K <- NCOL(coef)
   # Get xreg
-  xreg <- specials$xreg[[1]]$xreg
+  xreg <- .specials$xreg[[1]]$xreg
   if (object$spec$constant) {
     xreg <- cbind(constant = rep(1, h), xreg)
   }

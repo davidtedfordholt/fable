@@ -1,4 +1,4 @@
-train_lagwalk <- function(.data, specials, ...) {
+train_lagwalk <- function(.data, .specials, ...) {
   if (length(measured_vars(.data)) > 1) {
     abort("Only univariate responses are supported by lagwalks.")
   }
@@ -10,8 +10,8 @@ train_lagwalk <- function(.data, specials, ...) {
     abort("All observations are missing, a model cannot be estimated without data.")
   }
 
-  drift <- specials$drift[[1]] %||% FALSE
-  lag <- specials$lag[[1]]
+  drift <- .specials$drift[[1]] %||% FALSE
+  lag <- .specials$lag[[1]]
 
   y_na <- which(is.na(y))
   y_na <- y_na[y_na > lag]
@@ -118,7 +118,7 @@ train_lagwalk <- function(.data, specials, ...) {
 RW <- function(formula, ...) {
   rw_model <- new_model_class("RW",
     train = train_lagwalk,
-    specials = new_specials(
+    .specials = new_specials(
       lag = function(lag = NULL) {
         if (is.null(lag)) {
           lag <- 1
@@ -159,7 +159,7 @@ NAIVE <- RW
 SNAIVE <- function(formula, ...) {
   snaive_model <- new_model_class("RW",
     train = train_lagwalk,
-    specials = new_specials(
+    .specials = new_specials(
       lag = function(lag = NULL) {
         lag <- get_frequencies(lag, self$data, .auto = "smallest")
         if (lag == 1) {
@@ -196,7 +196,7 @@ SNAIVE <- function(formula, ...) {
 #'   model(snaive = SNAIVE(Beer ~ lag("year"))) %>%
 #'   forecast()
 #' @export
-forecast.RW <- function(object, new_data, specials = NULL, bootstrap = FALSE, times = 5000, ...) {
+forecast.RW <- function(object, new_data, .specials = NULL, bootstrap = FALSE, times = 5000, ...) {
   h <- NROW(new_data)
   lag <- object$spec$lag
   fullperiods <- (h - 1) / lag + 1

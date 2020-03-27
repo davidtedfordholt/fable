@@ -1,7 +1,7 @@
 globalVariables(c("p", "P", "q", "Q"))
 
 #' @importFrom stats approx lm ts
-train_arima <- function(.data, specials, ic = "aicc",
+train_arima <- function(.data, .specials, ic = "aicc",
                         stepwise = TRUE, greedy = TRUE, approximation = NULL,
                         order_constraint = p + q + P + Q <= 6,
                         unitroot_spec = unitroot_options(),
@@ -11,13 +11,13 @@ train_arima <- function(.data, specials, ic = "aicc",
   }
   
   # Get args
-  if(length(specials$pdq) > 1 || length(specials$PDQ) > 1){
+  if(length(.specials$pdq) > 1 || length(.specials$PDQ) > 1){
     warn("Only one special for `pdq()` and `PDQ()` is allowed, defaulting to the first usage")
   }
-  pdq <- specials$pdq[[1]]
-  PDQ <- specials$PDQ[[1]]
+  pdq <- .specials$pdq[[1]]
+  PDQ <- .specials$PDQ[[1]]
   period <- PDQ$period
-  special_fixed <- c(specials$pdq[[1]]$fixed, specials$PDQ[[1]]$fixed, specials$xreg[[1]]$fixed)
+  special_fixed <- c(.specials$pdq[[1]]$fixed, .specials$PDQ[[1]]$fixed, .specials$xreg[[1]]$fixed)
 
   # Get response
   y <- x <- ts(unclass(.data)[[measured_vars(.data)]], frequency = period)
@@ -31,8 +31,8 @@ train_arima <- function(.data, specials, ic = "aicc",
   }
 
   # Get xreg
-  constant <- specials$xreg[[1]]$constant %||% c(TRUE, FALSE)
-  xreg <- specials$xreg[[1]]$xreg
+  constant <- .specials$xreg[[1]]$constant %||% c(TRUE, FALSE)
+  xreg <- .specials$xreg[[1]]$xreg
 
   # Check xreg
   if (!is_empty(xreg)) {
@@ -557,7 +557,7 @@ ARIMA <- function(formula, ic = c("aicc", "aic", "bic"), stepwise = TRUE, greedy
   ic <- match.arg(ic)
   arima_model <- new_model_class("ARIMA",
     train = train_arima,
-    specials = specials_arima, origin = NULL,
+    .specials = specials_arima, origin = NULL,
     check = all_tsbl_checks
   )
   new_model_definition(arima_model, !!enquo(formula),
@@ -681,7 +681,7 @@ report.ARIMA <- function(object, ...) {
 #' Produces forecasts from a trained model.
 #'
 #' @inheritParams fabletools::forecast
-#' @param specials (passed by [`fabletools::forecast.mdl_df()`]).
+#' @param .specials (passed by [`fabletools::forecast.mdl_df()`]).
 #' @param bootstrap If `TRUE`, then forecast distributions are computed using simulation with resampled errors.
 #' @param times The number of sample paths to use in estimating the forecast distribution when `boostrap = TRUE`.
 #'
@@ -695,15 +695,15 @@ report.ARIMA <- function(object, ...) {
 #'   model(arima = ARIMA(log(value) ~ pdq(0, 1, 1) + PDQ(0, 1, 1))) %>%
 #'   forecast()
 #' @export
-forecast.ARIMA <- function(object, new_data = NULL, specials = NULL,
+forecast.ARIMA <- function(object, new_data = NULL, .specials = NULL,
                            bootstrap = FALSE, times = 5000, ...) {
-  xreg <- specials$xreg[[1]]$xreg
+  xreg <- .specials$xreg[[1]]$xreg
   
   # Drop unused rank deficient xreg
   xreg <- xreg[,colnames(xreg) %in% names(object$model$coef), drop = FALSE]
 
   if (bootstrap) {
-    sim <- map(seq_len(times), function(x) generate(object, new_data, specials, bootstrap = TRUE)[[".sim"]]) %>%
+    sim <- map(seq_len(times), function(x) generate(object, new_data, .specials, bootstrap = TRUE)[[".sim"]]) %>%
       transpose() %>%
       map(as.numeric)
     return(
@@ -748,10 +748,10 @@ forecast.ARIMA <- function(object, new_data = NULL, specials = NULL,
 #' fable_fit %>% generate(times = 10)
 #' 
 #' @export
-generate.ARIMA <- function(x, new_data, specials, bootstrap = FALSE, ...){
+generate.ARIMA <- function(x, new_data, .specials, bootstrap = FALSE, ...){
   # Get xreg
   h <- max(map_int(key_data(new_data)[[".rows"]], length))
-  xreg <- specials$xreg[[1]]$xreg
+  xreg <- .specials$xreg[[1]]$xreg
   if(x$spec$constant){
     intercept <- arima_constant(NROW(x$est) + h,
                                 x$spec$d, x$spec$D,
@@ -868,18 +868,18 @@ conditional_arima_sim <- function(object, x, e){
 #'
 #' @importFrom stats formula residuals
 #' @export
-refit.ARIMA <- function(object, new_data, specials = NULL, reestimate = FALSE, ...) {
+refit.ARIMA <- function(object, new_data, .specials = NULL, reestimate = FALSE, ...) {
   # Update data for re-evaluation
-  specials$pdq[[1]][c("p", "d", "q", "p_init", "q_init")] <- 
+  .specials$pdq[[1]][c("p", "d", "q", "p_init", "q_init")] <- 
     as.list(object$spec[c("p", "d", "q", "p", "q")])
-  specials$PDQ[[1]][c("P", "D", "Q", "period", "P_init", "Q_init")] <-
+  .specials$PDQ[[1]][c("P", "D", "Q", "period", "P_init", "Q_init")] <-
     as.list(object$spec[c("P", "D", "Q", "period", "P", "Q")])
   
   if (reestimate) {
-    return(train_arima(new_data, specials, ...))
+    return(train_arima(new_data, .specials, ...))
   }
 
-  out <- train_arima(new_data, specials, fixed = object$model$coef, ...)
+  out <- train_arima(new_data, .specials, fixed = object$model$coef, ...)
   out$par <- object$par
   out
 }
@@ -900,11 +900,11 @@ refit.ARIMA <- function(object, new_data, specials = NULL, reestimate = FALSE, .
 #'   interpolate(olympic_running)
 #' @importFrom stats formula residuals
 #' @export
-interpolate.ARIMA <- function(object, new_data, specials, ...) {
+interpolate.ARIMA <- function(object, new_data, .specials, ...) {
   # Get missing values
   y <- unclass(new_data)[[measured_vars(new_data)]]
   miss_val <- which(is.na(y))
-  object <- refit(object, new_data, specials, ...)$model$model
+  object <- refit(object, new_data, .specials, ...)$model$model
   fits <- stats::KalmanSmooth(y, object)$smooth[miss_val, , drop = FALSE] %*% as.matrix(object$Z)
 
   # Update data

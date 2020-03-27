@@ -1,11 +1,11 @@
-train_ets <- function(.data, specials, opt_crit,
+train_ets <- function(.data, .specials, opt_crit,
                       nmse, bounds, ic, restrict = TRUE, ...) {
   if (length(measured_vars(.data)) > 1) {
     abort("Only univariate responses are supported by ETS.")
   }
 
   # Rebuild `ets` arguments
-  ets_spec <- specials[c("error", "trend", "season")]
+  ets_spec <- .specials[c("error", "trend", "season")]
   ets_spec %>% map(function(.x) {
     if (length(.x) > 1) {
       abort("Only one special of each type is allowed for ETS.")
@@ -283,7 +283,7 @@ ETS <- function(formula, opt_crit = c("lik", "amse", "mse", "sigma", "mae"),
   ic <- match.arg(ic)
 
   ets_model <- new_model_class("ETS",
-    train = train_ets, specials = specials_ets,
+    train = train_ets, .specials = specials_ets,
     check = all_tsbl_checks
   )
   new_model_definition(ets_model, !!enquo(formula),
@@ -302,7 +302,7 @@ ETS <- function(formula, opt_crit = c("lik", "amse", "mse", "sigma", "mae"),
 #'   model(ets = ETS(log(value) ~ season("A"))) %>%
 #'   forecast()
 #' @export
-forecast.ETS <- function(object, new_data, specials = NULL, simulate = FALSE, bootstrap = FALSE, times = 5000, ...) {
+forecast.ETS <- function(object, new_data, .specials = NULL, simulate = FALSE, bootstrap = FALSE, times = 5000, ...) {
   errortype <- object$spec$errortype
   trendtype <- object$spec$trendtype
   seasontype <- object$spec$seasontype
@@ -364,7 +364,7 @@ forecast.ETS <- function(object, new_data, specials = NULL, simulate = FALSE, bo
 #' @seealso [`fabletools::generate.mdl_df`]
 #'
 #' @export
-generate.ETS <- function(x, new_data, specials, bootstrap = FALSE, ...) {
+generate.ETS <- function(x, new_data, .specials, bootstrap = FALSE, ...) {
   if (!is_regular(new_data)) {
     abort("Simulation new_data must be regularly spaced")
   }
@@ -446,7 +446,7 @@ generate.ETS <- function(x, new_data, specials, bootstrap = FALSE, ...) {
 #'   report()
 #' @importFrom stats formula residuals
 #' @export
-refit.ETS <- function(object, new_data, specials = NULL, reestimate = FALSE, reinitialise = TRUE, ...) {
+refit.ETS <- function(object, new_data, .specials = NULL, reestimate = FALSE, reinitialise = TRUE, ...) {
   est_par <- function(par) {
     if (any(pos <- object$par$term == par) && !reestimate) {
       object$par$estimate[pos]

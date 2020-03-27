@@ -68,7 +68,7 @@ CROSTON <- function(formula, opt_crit = c("mse", "mae"), ...) {
   opt_crit <- match.arg(opt_crit)
   croston_model <- new_model_class("croston",
     train = train_croston,
-    specials = specials_croston,
+    .specials = specials_croston,
     check = all_tsbl_checks
   )
   new_model_definition(croston_model, !!enquo(formula), opt_crit = opt_crit, ...)
@@ -95,7 +95,7 @@ specials_croston <- new_specials(
   .required_specials = c("demand", "interval")
 )
 
-train_croston <- function(.data, specials, opt_crit = "mse", ...) {
+train_croston <- function(.data, .specials, opt_crit = "mse", ...) {
   if (length(measured_vars(.data)) > 1) {
     abort("Only univariate responses are supported by Croston's method.")
   }
@@ -115,8 +115,8 @@ train_croston <- function(.data, specials, opt_crit = "mse", ...) {
   }
 
   # Get specials
-  demand <- specials$demand[[1]]
-  interval <- specials$interval[[1]]
+  demand <- .specials$demand[[1]]
+  interval <- .specials$interval[[1]]
 
   # Croston demand/interval decomposition
   y_demand <- y[non_zero]
@@ -226,7 +226,7 @@ estimate_croston <- function(y_demand, y_interval, demand, interval, non_zero, n
 #'   model(CROSTON(count)) %>%
 #'   forecast()
 #' @export
-forecast.croston <- function(object, new_data, specials = NULL, ...) {
+forecast.croston <- function(object, new_data, .specials = NULL, ...) {
   h <- nrow(new_data)
   fc <- rep(object$.fitted[length(object$.fitted)], h)
   construct_fc(fc, numeric(h), dist_unknown(h))
