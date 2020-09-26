@@ -95,7 +95,7 @@ specials_theta <- new_specials(
 #' \subsection{season}{
 #' The `season` special is used to specify the parameters of the seasonal adjustment via classical decomposition.
 #' \preformatted{
-#' window(period = NULL, method = c("multiplicative", "additive"))
+#' season(period = NULL, method = c("multiplicative", "additive"))
 #' }
 #'
 #' \tabular{ll}{
@@ -110,10 +110,25 @@ specials_theta <- new_specials(
 #' Assimakopoulos, V. and Nikolopoulos, K. (2000). The theta model:
 #' a decomposition approach to forecasting. \emph{International Journal of
 #' Forecasting} \bold{16}, 521-530.
-#'
+#' 
 #' Hyndman, R.J., and Billah, B. (2003) Unmasking the Theta method.
 #' \emph{International J. Forecasting}, \bold{19}, 287-290.
 #' 
+#' @examples
+#' # Theta method with transform
+#' deaths <- as_tsibble(USAccDeaths)
+#' deaths %>%
+#'   model(theta = THETA(log(value))) %>%
+#'   forecast(h = "4 years") %>%
+#'   autoplot(deaths)
+#' 
+#' # Compare seasonal specifications
+#' library(tsibbledata)
+#' aus_retail %>%
+#'   filter(Industry == "Clothing retailing") %>%
+#'   model(theta_multiplicative = THETA(Turnover ~ season(method = "multiplicative")),
+#'         theta_additive = THETA(Turnover ~ season(method = "additive"))) %>%
+#'   accuracy()
 #' @author Rob J Hyndman, Mitchell O'Hara-Wild
 #' @export
 THETA <- function(formula, ...) {
